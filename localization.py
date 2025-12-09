@@ -28,8 +28,12 @@ class VideoLocalizer:
     def __init__(self, model_path="yolo11s.pt", yolo_interval=5):
         # COCO class id -> label
         self.class_mapping = {
-            32: "ball",
+            25: "ball",
             41: "drone",  # original "cup" label repurposed for drone
+        }
+        self.class_conf = {
+            25: 0.05,  # ball (umb)
+            41: 0.1,   # drone (cup)
         }
 
         ultralytics.checks()
@@ -48,7 +52,7 @@ class VideoLocalizer:
         self.redundant_iou = 0.2
 
         # YOLO에서 여러 번 연속으로 못 봐도 optical flow로 유지할지 결정할 때 사용
-        self.max_missed = 5
+        self.max_missed = 3
 
     # -----------------------------
     #   Low-level helper methods
@@ -161,7 +165,7 @@ class VideoLocalizer:
         results = self.model(
             frame,
             classes=list(self.class_mapping.keys()),
-            conf=0.1,
+            conf=min(self.class_conf.values()),
             verbose=False,
         )[0]
 
@@ -171,6 +175,10 @@ class VideoLocalizer:
                 x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                 cls_id = int(box.cls[0])
                 score = float(box.conf[0])
+                
+                if score < self.class_conf.get(cls_id, 0.1):
+                    continue
+                
                 detections.append(
                     {
                         "bbox": [x1, y1, x2, y2],
@@ -458,9 +466,32 @@ d_sc1_o = output_dir + "/drone_sc1_o.mp4"
 d_sc2_o = output_dir + "/drone_sc2_o.mp4"
 
 
+
+t1 = input_dir + "/test1.mp4"
+t2 = input_dir + "/test2.mp4"
+
+t1_o = output_dir + "/test1_o.mp4"
+t2_o = output_dir + "/test2_o.mp4"
+
+
+umb1 = input_dir + "/umb1.mp4"
+umb2 = input_dir + "/umb2.mp4"
+umb3 = input_dir + "/umb3.mp4"
+umb4 = input_dir + "/umb4.mp4"
+umb5 = input_dir + "/umb5.mp4"
+
+umb1_o = output_dir + "/umb1_o.mp4"
+umb2_o = output_dir + "/umb2_o.mp4"
+umb3_o = output_dir + "/umb3_o.mp4"
+umb4_o = output_dir + "/umb4_o.mp4"
+umb5_o = output_dir + "/umb5_o.mp4"
+
 if __name__ == "__main__":
     localizer1 = VideoLocalizer(model_path="yolo11s.pt", yolo_interval=3) # interval=frame
     # localizer1.process_video(d_sc1, d_sc1_o, display=False)
     # localizer1.process_video(d_sc2, d_sc2_o, display=False)
     # localizer1.process_video(d_gc1, d_gc1_o, display=False)
-    localizer1.process_video(d_gc2, d_gc2_o, display=False)
+    # localizer1.process_video(d_gc2, d_gc2_o, display=False)
+    # localizer1.process_video(d_pp1, d_pp1_o, display=False)
+    # localizer1.process_video(t2, t2_o, display=False)
+    localizer1.process_video(umb4, umb4_o, display=False)
