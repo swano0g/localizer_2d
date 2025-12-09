@@ -68,10 +68,14 @@ class CollisionDetect(Node):
         if self.drone_pos is None or self.object_pos is None:
             return False
         
+        if self.object_hw is None:
+            return False
+        
         # 유클리드 거리 계산
-        distance = np.sqrt(
-            (self.drone_pos[0] - self.object_pos[0]) ** 2 + 
-            (self.drone_pos[1] - self.object_pos[1]) ** 2
+        distance = self.point_to_rect_distance(
+            self.drone_pos,
+            self.object_pos,
+            self.object_hw
         )
         
         # 거리가 임계값보다 작으면 충돌 위험
@@ -80,6 +84,42 @@ class CollisionDetect(Node):
             return True
         
         return False
+    
+    def point_to_rect_distance(self, point, rect_center, rect_size):
+        """
+        점에서 사각형까지의 최소 거리 계산
+        point: (x, y) - drone center
+        rect_center: (x, y) - object bbox center
+        rect_size: (h, w) - object bbox size
+        """
+        px, py = point
+        cx, cy = rect_center
+        h, w = rect_size
+        
+        # bbox의 경계 계산
+        left = cx - w / 2
+        right = cx + w / 2
+        top = cy - h / 2
+        bottom = cy + h / 2
+        
+        # 점에서 사각형까지의 최소 거리 계산
+        # x축 방향 거리
+        if px < left:
+            dx = left - px
+        elif px > right:
+            dx = px - right
+        else:
+            dx = 0
+        
+        # y축 방향 거리
+        if py < top:
+            dy = top - py
+        elif py > bottom:
+            dy = py - bottom
+        else:
+            dy = 0
+        
+        return np.sqrt(dx**2 + dy**2)
 
 
 def main(args=None):
