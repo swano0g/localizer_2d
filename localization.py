@@ -95,6 +95,10 @@ class VideoLocalizer:
         기존 track dict에 들어 있던 필드(id, class_id, miss_count 등)를
         유지한 채 bbox/points만 업데이트합니다.
         """
+        
+        if prev_gray.shape != curr_gray.shape:
+            return []
+        
         updated_tracks = []
 
         for t in tracks:
@@ -232,6 +236,11 @@ class VideoLocalizer:
     def process_frame(self, frame):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         self.frame_count += 1
+        
+        if self.prev_gray is not None and self.prev_gray.shape != gray.shape:
+            print(f"[WARN] Resolution changed: {self.prev_gray.shape} -> {gray.shape}, flushing tracks")
+            self.prev_gray = None
+            self.tracks = []
 
         # 1) optical flow로 기존 트랙 예측
         if self.prev_gray is not None and len(self.tracks) > 0:
